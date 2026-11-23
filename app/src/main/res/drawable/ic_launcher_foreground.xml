@@ -1,0 +1,13 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <!-- left pane folder -->
+    <path android:fillColor="#FFC83D"
+        android:pathData="M30,38h9l3,4h10v26h-22z" />
+    <!-- right pane folder -->
+    <path android:fillColor="#FFFFFF"
+        android:pathData="M56,38h9l3,4h10v26h-22z" />
+    <!-- tree lines -->
+    <path android:fillColor="#FFFFFF"
+        android:pathData="M33,71h2v6h8v2h-10z" />
+</vector>
