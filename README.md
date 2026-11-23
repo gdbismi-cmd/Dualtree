@@ -25,7 +25,8 @@ Kotlin + Jetpack Compose. Min Android 8.0 (API 26), targets Android 15 (API 35).
 - Text viewer with line numbers (up to 2 MB)
 - Image thumbnails, file-type icons, hidden-file toggle, sort by name/size/date/type
 - Details: size (recursive), item counts, permissions, free space
-- Share files, install APKs, Material You colors, dark mode
+- Share files, install APKs, Material You colors
+- Themes: follow system, light, dark, or pure black (AMOLED) — ⋮ menu → Theme
 - Symlinks are never followed when copying/deleting (safe on `/`)
 
 ## Code map

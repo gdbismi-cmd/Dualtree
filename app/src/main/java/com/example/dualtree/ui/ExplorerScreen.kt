@@ -66,6 +66,7 @@ fun ExplorerScreen(vm: ExplorerViewModel = viewModel()) {
     val selectedCount = vm.panes[vm.activePane].selected.size
     val anySelected = vm.panes.any { it.selected.isNotEmpty() }
     var sortMenu by remember { mutableStateOf(false) }
+    var moreMenu by remember { mutableStateOf(false) }
 
     BackHandler(enabled = anySelected) { vm.clearSelection() }
 
@@ -98,7 +99,41 @@ fun ExplorerScreen(vm: ExplorerViewModel = viewModel()) {
                             }
                         }
                     }
-                    IconButton(onClick = vm::refreshAll) { Icon(Icons.Filled.Refresh, "Refresh") }
+                    Box {
+                        IconButton(onClick = { moreMenu = true }) { Icon(Icons.Filled.MoreVert, "More") }
+                        DropdownMenu(expanded = moreMenu, onDismissRequest = { moreMenu = false }) {
+                            DropdownMenuItem(
+                                text = { Text("Refresh") },
+                                leadingIcon = { Icon(Icons.Filled.Refresh, null) },
+                                onClick = { vm.refreshAll(); moreMenu = false },
+                            )
+                            HorizontalDivider()
+                            Text(
+                                "Theme",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                            )
+                            ThemeMode.entries.forEach { m ->
+                                DropdownMenuItem(
+                                    text = { Text(m.label) },
+                                    leadingIcon = {
+                                        Icon(
+                                            when (m) {
+                                                ThemeMode.SYSTEM -> Icons.Filled.BrightnessAuto
+                                                ThemeMode.LIGHT -> Icons.Filled.LightMode
+                                                ThemeMode.DARK -> Icons.Filled.DarkMode
+                                                ThemeMode.BLACK -> Icons.Filled.Contrast
+                                            },
+                                            null,
+                                        )
+                                    },
+                                    trailingIcon = { if (m == ThemeSettings.mode) Icon(Icons.Filled.Check, "Current") },
+                                    onClick = { ThemeSettings.set(ctx, m); moreMenu = false },
+                                )
+                            }
+                        }
+                    }
                 },
             )
         },
