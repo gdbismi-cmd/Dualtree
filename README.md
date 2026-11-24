@@ -28,7 +28,8 @@ Kotlin + Jetpack Compose. Min Android 8.0 (API 26), targets Android 15 (API 35).
 - Details: size (recursive), item counts, permissions, free space
 - Share files, install APKs, Material You colors
 - Touch-to-glow feedback on every row and button, haptic buzz on long-press
-- **13 themes** (⋮ → Theme…), each with its own touch-glow:
+- **15 themes** (⋮ → Theme…), each with its own font and touch-glow:
+  Android 2.3 Gingerbread (orange-gradient select, Open Sans ≈ Droid Sans), Android 4.0 ICS (Holo blue, Roboto),
   Material You (system / light / dark / pure black – soft bloom), X-plore (blue bloom + yellow edge),
   Windows XP (Luna bars, orange hot-track), Windows Vista (black Aero glass, aqua glass glow),
   Windows 7 (light glass, sky-blue Aero glow), iPhone OS 1 (pinstripes, glossy blue select),
@@ -59,3 +60,10 @@ to file-manager apps, which this qualifies as, but requires a declaration form).
 ## Download the APK
 Every push to `main` is built by GitHub Actions. Grab the latest APK from the
 repository's **Releases** page (or the *Actions* tab → latest run → *Artifacts*).
+
+## Fonts
+Each theme uses an open-licence stand-in for its OS font (the originals can't be redistributed):
+PT Sans (XP/Tahoma), Noto Sans (Vista & 7/Segoe UI), Arimo (iPhone OS 1/Helvetica), Inter (iOS),
+Source Sans 3 (BlackBerry), Fira Sans (Symbian/Nokia Sans), Nunito (Snaptu), Roboto Condensed (X-plore),
+Open Sans (Gingerbread/Droid Sans). They're fetched into `app/src/main/res/font` by
+`scripts/fetch-fonts.sh` (CI does this automatically); licences are in `licenses/fonts`.

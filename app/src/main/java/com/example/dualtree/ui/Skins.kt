@@ -10,10 +10,11 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 
 /** Which touch-glow animation a skin uses (see Glow.kt). */
-enum class GlowKind { BLOOM, AERO, XP, BLACKBERRY, SYMBIAN, IOS, IOS1, XPLORE, SNAPTU }
+enum class GlowKind { BLOOM, AERO, XP, BLACKBERRY, SYMBIAN, IOS, IOS1, XPLORE, SNAPTU, HOLO, GINGERBREAD }
 
 @Immutable
 data class GlowStyle(val kind: GlowKind, val color: Color, val accent: Color)
@@ -36,6 +37,8 @@ data class Skin(
     val onHeader: Color = Color.Unspecified,
     val paneBackground: (DrawScope.() -> Unit)? = null,
     val glow: GlowStyle,
+    val fontFamily: FontFamily? = null,
+    val fontName: String = "Roboto",
 )
 
 val LocalSkin = staticCompositionLocalOf<Skin> { error("DualTreeTheme not applied") }
@@ -244,6 +247,38 @@ fun retroSkin(mode: ThemeMode): Skin? = when (mode) {
         onHeader = c(0xFFFFB54D),
         paneBackground = snaptuBackdrop,
         glow = GlowStyle(GlowKind.SNAPTU, c(0xFFFF9A1F), c(0xFFFFD07A)),
+    )
+
+    ThemeMode.ICS -> Skin(
+        mode, dark = true,
+        scheme = scheme(
+            true, 0xFF33B5E5, 0xFF000000, 0xFF111111, 0xFFFFFFFF, 0xFF1F1F1F, 0xFFB3B3B3,
+            0xFF0E3A4A, 0xFF33B5E5, 0xFF0F4F66, 0xFFFFFFFF, 0xFF282828,
+        ),
+        // Holo action bar: charcoal with the holo-blue rule along the bottom
+        topBar = v(0f to 0xFF2C2C2C, 0.94f to 0xFF1E1E1E, 0.94f to 0xFF33B5E5, 1f to 0xFF33B5E5),
+        onTopBar = c(0xFFFFFFFF),
+        bottomBar = v(0f to 0xFF3A3A3A, 0.03f to 0xFF262626, 1f to 0xFF1A1A1A),
+        onBottomBar = c(0xFFFFFFFF),
+        header = v(0f to 0xFF222222, 1f to 0xFF1A1A1A),
+        onHeader = c(0xFF33B5E5),
+        glow = GlowStyle(GlowKind.HOLO, c(0xFF33B5E5), c(0xFF0099CC)),
+    )
+
+    ThemeMode.GINGERBREAD -> Skin(
+        mode, dark = true,
+        scheme = scheme(
+            true, 0xFFFF9900, 0xFF000000, 0xFF000000, 0xFFFFFFFF, 0xFF1A1A1A, 0xFFAAAAAA,
+            0xFF333333, 0xFFA4C639, 0xFF5A3A00, 0xFFFFFFFF, 0xFF2B2B2B,
+        ),
+        // 2.x title bar and options-menu panel
+        topBar = v(0f to 0xFF5E5E5E, 0.5f to 0xFF3C3C3C, 0.5f to 0xFF2C2C2C, 1f to 0xFF1A1A1A),
+        onTopBar = c(0xFFFFFFFF),
+        bottomBar = v(0f to 0xFF6E6E6E, 0.5f to 0xFF474747, 1f to 0xFF2E2E2E),
+        onBottomBar = c(0xFFFFFFFF),
+        header = v(0f to 0xFF3C3C3C, 1f to 0xFF262626),
+        onHeader = c(0xFFA4C639),
+        glow = GlowStyle(GlowKind.GINGERBREAD, c(0xFFFF8A00), c(0xFFFFC81E)),
     )
 
     else -> null

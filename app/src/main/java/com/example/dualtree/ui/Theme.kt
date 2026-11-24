@@ -34,6 +34,8 @@ enum class ThemeMode(
     LIGHT("Light", "Material You, always light", false),
     DARK("Dark", "Material You, always dark", true),
     BLACK("Pure black (AMOLED)", "True black backgrounds", true),
+    GINGERBREAD("Android 2.3 Gingerbread", "Black lists, orange-gradient select", true),
+    ICS("Android 4.0 ICS", "Holo dark, holo-blue press", true),
     XPLORE("X-plore", "Graphite panes, blue glow with a yellow edge", true),
     XP("Windows XP", "Luna blue bars, orange hot-track glow", false, darkTop = true, darkBottom = true),
     VISTA("Windows Vista", "Black Aero glass, aqua glass glow", false, darkTop = true, darkBottom = true),
@@ -103,8 +105,11 @@ fun materialSkin(mode: ThemeMode, systemDark: Boolean, ctx: Context): Skin {
     )
 }
 
-fun skinFor(mode: ThemeMode, systemDark: Boolean, ctx: Context): Skin =
-    retroSkin(mode) ?: materialSkin(mode, systemDark, ctx)
+fun skinFor(mode: ThemeMode, systemDark: Boolean, ctx: Context): Skin {
+    val skin = retroSkin(mode) ?: materialSkin(mode, systemDark, ctx)
+    val font = themeFontFor(mode)
+    return skin.copy(fontFamily = loadFontFamily(ctx, font.spec), fontName = font.name)
+}
 
 @Composable
 fun DualTreeTheme(content: @Composable () -> Unit) {
@@ -112,7 +117,8 @@ fun DualTreeTheme(content: @Composable () -> Unit) {
     val systemDark = isSystemInDarkTheme()
     val mode = ThemeSettings.mode
     val skin = remember(mode, systemDark) { skinFor(mode, systemDark, ctx) }
-    MaterialTheme(colorScheme = skin.scheme) {
+    val typography = remember(skin.fontFamily) { typographyFor(skin.fontFamily) }
+    MaterialTheme(colorScheme = skin.scheme, typography = typography) {
         // Each skin brings its own touch glow, used by every clickable row and button.
         val glow = remember(skin.glow) { GlowIndication(skin.glow) }
         CompositionLocalProvider(

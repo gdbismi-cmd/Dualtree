@@ -21,6 +21,9 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
+      - name: Fetch bundled fonts
+        run: bash scripts/fetch-fonts.sh
+
       - name: Build debug APK
         run: |
           echo "ANDROID_HOME=$ANDROID_HOME"
@@ -31,6 +34,17 @@ jobs:
             grep -E '^e: |error:|What went wrong' -A2 build.log | head -40 | while IFS= read -r l; do echo "::error::$l"; done
             exit 1
           }
+
+      - name: Commit fetched fonts back to the repo
+        if: github.ref == 'refs/heads/main'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/src/main/res/font licenses || true
+          if ! git diff --cached --quiet; then
+            git commit -m "Add bundled open-licence fonts [skip ci]"
+            git push || echo "::warning::Could not push fonts"
+          fi
 
       - name: Rename APK
         run: cp app/build/outputs/apk/debug/app-debug.apk DualTree-${{ github.run_number }}.apk

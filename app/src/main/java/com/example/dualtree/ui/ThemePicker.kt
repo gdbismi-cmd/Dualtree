@@ -61,9 +61,14 @@ fun ThemePickerDialog(onDismiss: () -> Unit) {
                         SkinPreview(skin)
                         Spacer(Modifier.width(12.dp))
                         Column(Modifier.weight(1f)) {
-                            Text(skin.mode.label, style = MaterialTheme.typography.bodyLarge)
                             Text(
-                                skin.mode.description,
+                                skin.mode.label,
+                                style = MaterialTheme.typography.bodyLarge.copy(
+                                    fontFamily = skin.fontFamily ?: MaterialTheme.typography.bodyLarge.fontFamily,
+                                ),
+                            )
+                            Text(
+                                "${skin.mode.description} · ${skin.fontName}",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )

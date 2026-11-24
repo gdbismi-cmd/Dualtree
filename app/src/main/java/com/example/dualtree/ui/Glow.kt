@@ -48,7 +48,8 @@ private class GlowNode(
 
     private val fadeOutMs = when (style.kind) {
         GlowKind.IOS -> 260
-        GlowKind.IOS1, GlowKind.BLACKBERRY -> 420
+        GlowKind.HOLO -> 320
+        GlowKind.IOS1, GlowKind.BLACKBERRY, GlowKind.GINGERBREAD -> 420
         else -> 650
     }
     private val spreadMs = when (style.kind) {
@@ -187,6 +188,24 @@ private class GlowNode(
             // Modern iOS: flat grey press, quick fade.
             GlowKind.IOS -> {
                 drawRect(col.copy(alpha = 0.9f * a))
+                drawContent()
+            }
+
+            // ICS Holo: flat translucent holo-blue press with a brighter core under the finger.
+            GlowKind.HOLO -> {
+                drawRect(col.copy(alpha = 0.45f * a))
+                drawContent()
+                bloom(c, col, a, s, 0.35f)
+            }
+
+            // Gingerbread: the classic orange-to-yellow list selector gradient.
+            GlowKind.GINGERBREAD -> {
+                val inset = 1.dp.toPx()
+                val r = CornerRadius(2.dp.toPx())
+                val tl = Offset(inset, inset)
+                val sz = Size(w - 2 * inset, h - 2 * inset)
+                drawRoundRect(Brush.verticalGradient(listOf(acc.copy(alpha = a), col.copy(alpha = a))), tl, sz, r)
+                drawRect(Color.White.copy(alpha = 0.35f * a), tl, Size(sz.width, 1.dp.toPx()))
                 drawContent()
             }
 
