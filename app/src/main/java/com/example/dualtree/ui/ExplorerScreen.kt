@@ -8,6 +8,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerState
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -32,11 +36,17 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -54,6 +64,8 @@ import com.example.dualtree.data.Kind
 import com.example.dualtree.model.Node
 import com.example.dualtree.model.Progress
 import com.example.dualtree.model.SortMode
+import kotlinx.coroutines.launch
+import kotlin.math.absoluteValue
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -141,16 +153,125 @@ fun ExplorerScreen(vm: ExplorerViewModel = viewModel()) {
     ) { pad ->
         Column(Modifier.padding(pad).fillMaxSize()) {
             progress?.let { ProgressStrip(it, vm::cancelOp) }
-            Row(Modifier.fillMaxSize()) {
-                PaneView(vm, 0, Modifier.weight(1f))
-                VerticalDivider()
-                PaneView(vm, 1, Modifier.weight(1f))
+            BoxWithConstraints(Modifier.fillMaxSize()) {
+                if (maxWidth >= 600.dp) {
+                    // Tablets / landscape: both panes side by side.
+                    Row(Modifier.fillMaxSize()) {
+                        PaneView(vm, 0, Modifier.weight(1f))
+                        VerticalDivider()
+                        PaneView(vm, 1, Modifier.weight(1f))
+                    }
+                } else {
+                    // Phones: one pane at a time, slide to reach the other (X-plore style).
+                    SlidingPanes(vm)
+                }
             }
         }
     }
 
     vm.dialog?.let { DialogHost(it, vm) }
     vm.viewer?.let { f -> FileViewer(f, onClose = { vm.viewer = null }, onOpenExternal = vm::openExternal) }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun SlidingPanes(vm: ExplorerViewModel) {
+    val pager = rememberPagerState(initialPage = vm.activePane) { 2 }
+
+    // Swiping makes that pane active…
+    LaunchedEffect(pager) {
+        snapshotFlow { pager.settledPage }.collect { vm.activate(it) }
+    }
+    // …and activating a pane (tab tap, etc.) slides to it.
+    LaunchedEffect(vm.activePane) {
+        if (pager.currentPage != vm.activePane && !pager.isScrollInProgress) {
+            pager.animateScrollToPage(vm.activePane)
+        }
+    }
+
+    Column(Modifier.fillMaxSize()) {
+        PaneTabs(vm, pager)
+        HorizontalPager(
+            state = pager,
+            modifier = Modifier.fillMaxSize(),
+            beyondViewportPageCount = 1,
+            key = { it },
+        ) { page ->
+            PaneView(
+                vm, page,
+                Modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        // Slight depth effect while sliding between panes.
+                        val off = ((pager.currentPage - page) + pager.currentPageOffsetFraction)
+                            .absoluteValue.coerceIn(0f, 1f)
+                        alpha = 1f - 0.35f * off
+                        val sc = 1f - 0.06f * off
+                        scaleX = sc
+                        scaleY = sc
+                    },
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun PaneTabs(vm: ExplorerViewModel, pager: PagerState) {
+    val scope = rememberCoroutineScope()
+    val colors = MaterialTheme.colorScheme
+    Row(Modifier.fillMaxWidth().background(colors.surface)) {
+        for (i in 0..1) {
+            val pane = vm.panes[i]
+            val name = remember(pane.cursor, pane.nodes) {
+                vm.focusDir(i).let { f -> vm.roots.firstOrNull { it.path == f.absolutePath }?.label ?: f.name.ifEmpty { "/" } }
+            }
+            // How "selected" this tab is, following the finger while sliding.
+            val pos = pager.currentPage + pager.currentPageOffsetFraction
+            val sel = (1f - (pos - i).absoluteValue).coerceIn(0f, 1f)
+            val count = pane.selected.size
+            Column(
+                Modifier
+                    .weight(1f)
+                    .clickable {
+                        vm.activate(i)
+                        scope.launch { pager.animateScrollToPage(i) }
+                    },
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Row(
+                    Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        "${i + 1}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = colors.onPrimary,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(50))
+                            .background(lerp(colors.outline, colors.primary, sel))
+                            .padding(horizontal = 6.dp, vertical = 1.dp),
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        name + if (count > 0) "  ($count)" else "",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = lerp(colors.onSurfaceVariant, colors.primary, sel),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                Box(
+                    Modifier
+                        .fillMaxWidth(0.6f)
+                        .height(3.dp)
+                        .clip(RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp))
+                        .background(colors.primary.copy(alpha = sel)),
+                )
+            }
+        }
+    }
+    HorizontalDivider()
 }
 
 @Composable
@@ -211,6 +332,7 @@ private fun NodeRow(
     onToggle: () -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
+    val haptics = LocalHapticFeedback.current
     val bg = when {
         isSelected -> colors.secondaryContainer
         isCursor -> colors.surfaceVariant
@@ -220,7 +342,13 @@ private fun NodeRow(
         Modifier
             .fillMaxWidth()
             .background(bg)
-            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = {
+                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onLongClick()
+                },
+            )
             .padding(start = (node.depth * 10).dp + 2.dp, end = 4.dp, top = 3.dp, bottom = 3.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

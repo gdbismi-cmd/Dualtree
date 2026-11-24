@@ -9,7 +9,8 @@ Kotlin + Jetpack Compose. Min Android 8.0 (API 26), targets Android 15 (API 35).
 3. On first launch tap **Grant access** and enable *Allow access to manage all files*.
 
 ## How it works (X-plore style)
-- **Two panes side by side**, each a **collapsible tree**: tap a folder to expand it inline.
+- **Two panes** — on phones one pane fills the screen and you **slide left/right** (or tap the
+  1 / 2 tabs) to switch; on tablets and in landscape they sit side by side. Each pane is a **collapsible tree**: tap a folder to expand it inline.
   The highlighted pane header is the *active* pane.
 - **Tap** a file to open it (images and text open in the built-in viewer, others via "Open with").
 - **Long-press** to start multi-selection; tap more items to add them. Back clears it.
@@ -26,6 +27,7 @@ Kotlin + Jetpack Compose. Min Android 8.0 (API 26), targets Android 15 (API 35).
 - Image thumbnails, file-type icons, hidden-file toggle, sort by name/size/date/type
 - Details: size (recursive), item counts, permissions, free space
 - Share files, install APKs, Material You colors
+- Touch-to-glow feedback on every row and button, haptic buzz on long-press
 - Themes: follow system, light, dark, or pure black (AMOLED) — ⋮ menu → Theme
 - Symlinks are never followed when copying/deleting (safe on `/`)
 
