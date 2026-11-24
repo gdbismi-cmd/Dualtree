@@ -24,7 +24,7 @@ Kotlin + Jetpack Compose. Min Android 8.0 (API 26), targets Android 15 (API 35).
 - Recursive search with wildcards (`*.jpg`, `IMG_20??*`), tap a result to reveal it in the tree
 - Image viewer: swipe through the folder, pinch / double-tap to zoom
 - Text viewer with line numbers (up to 2 MB)
-- Image thumbnails, file-type icons, hidden-file toggle, sort by name/size/date/type
+- Image thumbnails, real app icons for .apk files (plus app name/package/version in Details), file-type icons, hidden-file toggle, sort by name/size/date/type
 - Details: size (recursive), item counts, permissions, free space
 - Share files, install APKs, Material You colors
 - Touch-to-glow feedback on every row and button, haptic buzz on long-press

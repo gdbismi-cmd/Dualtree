@@ -11,6 +11,7 @@ import androidx.compose.runtime.setValue
 import androidx.core.content.FileProvider
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.dualtree.data.Apk
 import com.example.dualtree.data.FileOps
 import com.example.dualtree.data.FileTypes
 import com.example.dualtree.data.Fs
@@ -383,6 +384,14 @@ class ExplorerViewModel(app: Application) : AndroidViewModel(app) {
                 add("Path" to f.absolutePath)
                 add("Type" to if (f.isDirectory) "Folder" else FileTypes.mime(f))
                 add("Modified" to Fs.formatDate(f.lastModified()))
+                if (FileTypes.kind(f) == Kind.APK) {
+                    val ctx = getApplication<Application>()
+                    Apk.info(ctx, f)?.let { info ->
+                        Apk.label(ctx, info)?.let { add("App" to it) }
+                        add("Package" to info.packageName)
+                        add("Version" to "${info.versionName ?: "?"} (${info.longVersionCode})")
+                    }
+                }
                 add("Permissions" to buildString {
                     append(if (f.canRead()) "r" else "-")
                     append(if (f.canWrite()) "w" else "-")

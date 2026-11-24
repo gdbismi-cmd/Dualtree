@@ -58,6 +58,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.dualtree.ExplorerViewModel
+import com.example.dualtree.data.ApkIcon
 import com.example.dualtree.data.FileTypes
 import com.example.dualtree.data.Fs
 import com.example.dualtree.data.Kind
@@ -408,6 +409,20 @@ private fun FileIcon(node: Node, modifier: Modifier) {
             modifier = modifier.clip(RoundedCornerShape(4.dp)),
         )
         return
+    }
+    if (kind == Kind.APK) {
+        // Show the app's own launcher icon; fall back to the robot if it can't be read.
+        var failed by remember(node.path) { mutableStateOf(false) }
+        if (!failed) {
+            AsyncImage(
+                model = ApkIcon(node.file),
+                contentDescription = null,
+                contentScale = ContentScale.Fit,
+                onError = { failed = true },
+                modifier = modifier,
+            )
+            return
+        }
     }
     val (icon: ImageVector, tint: Color) = when {
         node.root?.removable == true -> Icons.Filled.SdStorage to Color(0xFF43A047)
