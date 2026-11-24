@@ -32,6 +32,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -42,7 +43,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -80,12 +84,24 @@ fun ExplorerScreen(vm: ExplorerViewModel = viewModel()) {
     val anySelected = vm.panes.any { it.selected.isNotEmpty() }
     var sortMenu by remember { mutableStateOf(false) }
     var moreMenu by remember { mutableStateOf(false) }
+    var themePicker by remember { mutableStateOf(false) }
+    val skin = LocalSkin.current
 
     BackHandler(enabled = anySelected) { vm.clearSelection() }
 
     Scaffold(
         topBar = {
+            val barFg = skin.onTopBar
             TopAppBar(
+                modifier = if (skin.topBar != null) Modifier.background(skin.topBar) else Modifier,
+                colors = if (skin.topBar != null) {
+                    TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Transparent,
+                        titleContentColor = barFg,
+                        actionIconContentColor = barFg,
+                        navigationIconContentColor = barFg,
+                    )
+                } else TopAppBarDefaults.topAppBarColors(),
                 title = { Text(if (selectedCount > 0) "$selectedCount selected" else "DualTree") },
                 navigationIcon = {
                     if (anySelected) {
@@ -120,31 +136,16 @@ fun ExplorerScreen(vm: ExplorerViewModel = viewModel()) {
                                 leadingIcon = { Icon(Icons.Filled.Refresh, null) },
                                 onClick = { vm.refreshAll(); moreMenu = false },
                             )
-                            HorizontalDivider()
-                            Text(
-                                "Theme",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                            DropdownMenuItem(
+                                text = { Text("Disk map") },
+                                leadingIcon = { Icon(Icons.Filled.Dashboard, null) },
+                                onClick = { vm.openDiskMap(); moreMenu = false },
                             )
-                            ThemeMode.entries.forEach { m ->
-                                DropdownMenuItem(
-                                    text = { Text(m.label) },
-                                    leadingIcon = {
-                                        Icon(
-                                            when (m) {
-                                                ThemeMode.SYSTEM -> Icons.Filled.BrightnessAuto
-                                                ThemeMode.LIGHT -> Icons.Filled.LightMode
-                                                ThemeMode.DARK -> Icons.Filled.DarkMode
-                                                ThemeMode.BLACK -> Icons.Filled.Contrast
-                                            },
-                                            null,
-                                        )
-                                    },
-                                    trailingIcon = { if (m == ThemeSettings.mode) Icon(Icons.Filled.Check, "Current") },
-                                    onClick = { ThemeSettings.set(ctx, m); moreMenu = false },
-                                )
-                            }
+                            DropdownMenuItem(
+                                text = { Text("Theme…") },
+                                leadingIcon = { Icon(Icons.Filled.Palette, null) },
+                                onClick = { themePicker = true; moreMenu = false },
+                            )
                         }
                     }
                 },
@@ -171,6 +172,14 @@ fun ExplorerScreen(vm: ExplorerViewModel = viewModel()) {
     }
 
     vm.dialog?.let { DialogHost(it, vm) }
+    if (themePicker) ThemePickerDialog { themePicker = false }
+    vm.diskMapRoot?.let { root ->
+        DiskMapScreen(
+            root = root,
+            onClose = { vm.diskMapRoot = null },
+            onReveal = { f -> vm.diskMapRoot = null; vm.reveal(f) },
+        )
+    }
     vm.viewer?.let { f -> FileViewer(f, onClose = { vm.viewer = null }, onOpenExternal = vm::openExternal) }
 }
 
@@ -221,7 +230,10 @@ private fun SlidingPanes(vm: ExplorerViewModel) {
 private fun PaneTabs(vm: ExplorerViewModel, pager: PagerState) {
     val scope = rememberCoroutineScope()
     val colors = MaterialTheme.colorScheme
-    Row(Modifier.fillMaxWidth().background(colors.surface)) {
+    val skin = LocalSkin.current
+    val onTab = if (skin.header != null) skin.onHeader else colors.primary
+    val offTab = if (skin.header != null) skin.onHeader.copy(alpha = 0.6f) else colors.onSurfaceVariant
+    Row(Modifier.fillMaxWidth().background(skin.header ?: SolidColor(colors.surface))) {
         for (i in 0..1) {
             val pane = vm.panes[i]
             val name = remember(pane.cursor, pane.nodes) {
@@ -257,7 +269,7 @@ private fun PaneTabs(vm: ExplorerViewModel, pager: PagerState) {
                     Text(
                         name + if (count > 0) "  ($count)" else "",
                         style = MaterialTheme.typography.labelLarge,
-                        color = lerp(colors.onSurfaceVariant, colors.primary, sel),
+                        color = lerp(offTab, onTab, sel),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -267,7 +279,7 @@ private fun PaneTabs(vm: ExplorerViewModel, pager: PagerState) {
                         .fillMaxWidth(0.6f)
                         .height(3.dp)
                         .clip(RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp))
-                        .background(colors.primary.copy(alpha = sel)),
+                        .background(onTab.copy(alpha = sel)),
                 )
             }
         }
@@ -291,8 +303,17 @@ private fun PaneView(vm: ExplorerViewModel, index: Int, modifier: Modifier) {
         }
     }
 
-    val headerBg = if (active) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
-    val headerFg = if (active) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+    val skin = LocalSkin.current
+    val headerBg: Brush = when {
+        active && skin.header != null -> skin.header
+        active -> SolidColor(MaterialTheme.colorScheme.primaryContainer)
+        else -> SolidColor(MaterialTheme.colorScheme.surfaceVariant)
+    }
+    val headerFg = when {
+        active && skin.header != null -> skin.onHeader
+        active -> MaterialTheme.colorScheme.onPrimaryContainer
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
 
     Column(modifier.fillMaxHeight()) {
         Text(
@@ -307,7 +328,12 @@ private fun PaneView(vm: ExplorerViewModel, index: Int, modifier: Modifier) {
                 .clickable { vm.activate(index) }
                 .padding(horizontal = 8.dp, vertical = 6.dp),
         )
-        LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
+            state = listState,
+            modifier = Modifier
+                .fillMaxSize()
+                .drawBehind { skin.paneBackground?.invoke(this) },
+        ) {
             items(pane.nodes, key = { it.key }) { node ->
                 NodeRow(
                     node = node,
@@ -443,10 +469,14 @@ private fun FileIcon(node: Node, modifier: Modifier) {
 @Composable
 private fun ActionBar(vm: ExplorerViewModel) {
     val arrow = if (vm.activePane == 0) "→" else "←"
-    Surface(tonalElevation = 3.dp) {
+    val skin = LocalSkin.current
+    val bg = skin.bottomBar ?: SolidColor(MaterialTheme.colorScheme.surfaceColorAtElevation(3.dp))
+    val fg = if (skin.bottomBar != null) skin.onBottomBar else MaterialTheme.colorScheme.onSurface
+    CompositionLocalProvider(LocalContentColor provides fg) {
         Row(
             Modifier
                 .fillMaxWidth()
+                .background(bg)
                 .navigationBarsPadding()
                 .horizontalScroll(rememberScrollState())
                 .padding(horizontal = 4.dp, vertical = 4.dp),
@@ -461,6 +491,7 @@ private fun ActionBar(vm: ExplorerViewModel) {
             ToolButton(Icons.Filled.Share, "Share", vm::share)
             ToolButton(Icons.Filled.SelectAll, "Select all", vm::selectAll)
             ToolButton(Icons.Filled.Info, "Details", vm::showProperties)
+            ToolButton(Icons.Filled.Dashboard, "Disk map", vm::openDiskMap)
         }
     }
 }

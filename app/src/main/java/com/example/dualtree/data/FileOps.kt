@@ -37,7 +37,7 @@ object FileOps {
         if (parent == "/") child.length > 1 && child.startsWith("/") else child.startsWith("$parent/")
 
     /** Never follow symlinks when recursing — avoids loops and deleting a link's target. */
-    private fun isLink(f: File) = try { Files.isSymbolicLink(f.toPath()) } catch (e: Exception) { false }
+    internal fun isLink(f: File) = try { Files.isSymbolicLink(f.toPath()) } catch (e: Exception) { false }
 
     private fun sizeOf(f: File): Long = when {
         isLink(f) -> 0

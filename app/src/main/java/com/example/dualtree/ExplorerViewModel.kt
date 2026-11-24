@@ -51,6 +51,7 @@ class ExplorerViewModel(app: Application) : AndroidViewModel(app) {
     var sortMode by mutableStateOf(SortMode.NAME); private set
     var dialog by mutableStateOf<DialogState?>(null)
     var viewer by mutableStateOf<File?>(null)
+    var diskMapRoot by mutableStateOf<File?>(null)
 
     val progress = MutableStateFlow<Progress?>(null)
     private var opJob: Job? = null
@@ -417,6 +418,12 @@ class ExplorerViewModel(app: Application) : AndroidViewModel(app) {
                 )
             }
         }
+    }
+
+    /** Disk map of the selected folder, or the folder open in the active pane. */
+    fun openDiskMap() {
+        val sel = targets().singleOrNull()?.takeIf { it.isDirectory }
+        diskMapRoot = sel ?: focusDir(activePane)
     }
 
     // ---------------------------------------------------------------- search

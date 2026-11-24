@@ -19,11 +19,30 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
-enum class ThemeMode(val label: String) {
-    SYSTEM("Follow system"),
-    LIGHT("Light"),
-    DARK("Dark"),
-    BLACK("Pure black (AMOLED)"),
+/**
+ * Theme choices. [dark] = content is dark (null = follow system);
+ * [darkTop]/[darkBottom] = whether the top/bottom bars are dark, so status/nav bar icons stay readable.
+ */
+enum class ThemeMode(
+    val label: String,
+    val description: String,
+    val dark: Boolean?,
+    val darkTop: Boolean? = dark,
+    val darkBottom: Boolean? = dark,
+) {
+    SYSTEM("Follow system", "Material You, light or dark with the phone", null),
+    LIGHT("Light", "Material You, always light", false),
+    DARK("Dark", "Material You, always dark", true),
+    BLACK("Pure black (AMOLED)", "True black backgrounds", true),
+    XPLORE("X-plore", "Graphite panes, blue glow with a yellow edge", true),
+    XP("Windows XP", "Luna blue bars, orange hot-track glow", false, darkTop = true, darkBottom = true),
+    VISTA("Windows Vista", "Black Aero glass, aqua glass glow", false, darkTop = true, darkBottom = true),
+    WIN7("Windows 7", "Light glass toolbar, sky-blue Aero glow", false, darkTop = false, darkBottom = true),
+    IOS1("iPhone OS 1", "Pinstripes, glossy steel bars, blue gloss select", false, darkTop = true, darkBottom = true),
+    IOS("iOS", "Clean white, grey press highlight", false),
+    BLACKBERRY("BlackBerry OS", "Charcoal, glowing blue focus bar", true),
+    SYMBIAN("Symbian", "S60 deep blue, light-sweep highlight", true),
+    SNAPTU("Snaptu", "Midnight navy, orange neon ripple ring", true),
 }
 
 /** App-wide theme choice, saved in SharedPreferences. */
@@ -45,13 +64,9 @@ object ThemeSettings {
     }
 }
 
-/** Whether the current theme choice resolves to dark. */
+/** Whether the current theme's content is dark. */
 @Composable
-fun isAppInDarkTheme(): Boolean = when (ThemeSettings.mode) {
-    ThemeMode.SYSTEM -> isSystemInDarkTheme()
-    ThemeMode.LIGHT -> false
-    ThemeMode.DARK, ThemeMode.BLACK -> true
-}
+fun isAppInDarkTheme(): Boolean = ThemeSettings.mode.dark ?: isSystemInDarkTheme()
 
 private val LightColors = lightColorScheme(primary = Color(0xFF1E5AA8))
 private val DarkColors = darkColorScheme(primary = Color(0xFF9EC2FF))
@@ -66,13 +81,12 @@ private fun ColorScheme.toPureBlack(): ColorScheme = copy(
     surfaceContainerHigh = Color(0xFF1A1A1A),
     surfaceContainerHighest = Color(0xFF222222),
     surfaceVariant = Color(0xFF1C1C1C),
-    surfaceTint = Color.Transparent, // no grey wash on elevated bars
+    surfaceTint = Color.Transparent,
 )
 
-@Composable
-fun DualTreeTheme(content: @Composable () -> Unit) {
-    val dark = isAppInDarkTheme()
-    val ctx = LocalContext.current
+/** Material You skins (System / Light / Dark / Black). */
+fun materialSkin(mode: ThemeMode, systemDark: Boolean, ctx: Context): Skin {
+    val dark = mode.dark ?: systemDark
     val dynamic = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
     val base = when {
         dynamic && dark -> dynamicDarkColorScheme(ctx)
@@ -80,10 +94,31 @@ fun DualTreeTheme(content: @Composable () -> Unit) {
         dark -> DarkColors
         else -> LightColors
     }
-    val scheme = if (ThemeSettings.mode == ThemeMode.BLACK) base.toPureBlack() else base
-    MaterialTheme(colorScheme = scheme) {
-        // Replace the default ripple with the touch glow for all clickable rows/buttons.
-        val glow = remember(scheme.primary) { GlowIndication(scheme.primary) }
-        CompositionLocalProvider(LocalIndication provides glow, content = content)
+    val scheme = if (mode == ThemeMode.BLACK) base.toPureBlack() else base
+    return Skin(
+        mode = mode,
+        scheme = scheme,
+        dark = dark,
+        glow = GlowStyle(GlowKind.BLOOM, scheme.primary, scheme.primary),
+    )
+}
+
+fun skinFor(mode: ThemeMode, systemDark: Boolean, ctx: Context): Skin =
+    retroSkin(mode) ?: materialSkin(mode, systemDark, ctx)
+
+@Composable
+fun DualTreeTheme(content: @Composable () -> Unit) {
+    val ctx = LocalContext.current
+    val systemDark = isSystemInDarkTheme()
+    val mode = ThemeSettings.mode
+    val skin = remember(mode, systemDark) { skinFor(mode, systemDark, ctx) }
+    MaterialTheme(colorScheme = skin.scheme) {
+        // Each skin brings its own touch glow, used by every clickable row and button.
+        val glow = remember(skin.glow) { GlowIndication(skin.glow) }
+        CompositionLocalProvider(
+            LocalSkin provides skin,
+            LocalIndication provides glow,
+            content = content,
+        )
     }
 }

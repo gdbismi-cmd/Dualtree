@@ -54,11 +54,14 @@ class MainActivity : ComponentActivity() {
         ThemeSettings.load(this)
         setContent {
             // Keep status/navigation bar icons readable for the chosen theme.
+            // Bars can be dark even in a light theme (XP, Vista, iPhone OS 1…), so pick icon colours per bar.
             val dark = isAppInDarkTheme()
-            DisposableEffect(dark) {
+            val topDark = ThemeSettings.mode.darkTop ?: dark
+            val bottomDark = ThemeSettings.mode.darkBottom ?: dark
+            DisposableEffect(topDark, bottomDark) {
                 enableEdgeToEdge(
-                    statusBarStyle = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT) { dark },
-                    navigationBarStyle = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT) { dark },
+                    statusBarStyle = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT) { topDark },
+                    navigationBarStyle = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT) { bottomDark },
                 )
                 onDispose { }
             }

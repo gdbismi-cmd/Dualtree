@@ -28,7 +28,14 @@ Kotlin + Jetpack Compose. Min Android 8.0 (API 26), targets Android 15 (API 35).
 - Details: size (recursive), item counts, permissions, free space
 - Share files, install APKs, Material You colors
 - Touch-to-glow feedback on every row and button, haptic buzz on long-press
-- Themes: follow system, light, dark, or pure black (AMOLED) — ⋮ menu → Theme
+- **13 themes** (⋮ → Theme…), each with its own touch-glow:
+  Material You (system / light / dark / pure black – soft bloom), X-plore (blue bloom + yellow edge),
+  Windows XP (Luna bars, orange hot-track), Windows Vista (black Aero glass, aqua glass glow),
+  Windows 7 (light glass, sky-blue Aero glow), iPhone OS 1 (pinstripes, glossy blue select),
+  iOS (flat grey press), BlackBerry OS (glowing blue focus bar), Symbian (S60 blue, light sweep),
+  Snaptu (navy, orange neon ripple ring)
+- **Disk map** (toolbar or ⋮): treemap of what's using space; tap to select, double-tap to zoom in,
+  long-press or "Show in pane" to jump to it
 - Symlinks are never followed when copying/deleting (safe on `/`)
 
 ## Code map
